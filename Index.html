@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evil Devil - 100 Levels</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101018;color:white;
+ font-family:Arial;text-align:center;
+}
+h1{color:#ff3030;text-shadow:0 0 15px red}
+#info{font-size:20px;margin:10px}
+canvas{
+ background:linear-gradient(#17172b,#29203a);
+ border:3px solid #ff3030;
+ width:min(95vw,800px);
+ height:auto;
+}
+.controls{margin:12px}
+button{
+ background:#d71935;color:white;border:0;
+ padding:14px 22px;margin:5px;
+ border-radius:10px;font-size:18px;
+}
+button:active{background:#ff6575}
+</style>
+</head>
+<body>
+
+<h1>😈 EVIL DEVIL</h1>
+<div id="info">LEVEL: 1 / 100</div>
+<canvas id="game" width="800" height="400"></canvas>
+
+<div class="controls">
+<button onclick="left=true">⬅️</button>
+<button onclick="jump()">⬆️ SAKRASH</button>
+<button onclick="right=true">➡️</button>
+</div>
+<button onclick="restart()">🔄 QAYTA BOSHLASH</button>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+let level=1;
+let player={x:40,y:300,w:30,h:40,vx:0,vy:0};
+let left=false,right=false;
+let grounded=false,dead=false,won=false;
+let keys={};
+let traps=[],goal={x:750,y:320,w:30,h:50};
+
+function createLevel(){
+ traps=[];
+ let count=Math.min(3+level,16);
+ for(let i=0;i<count;i++){
+  traps.push({
+   x:130+i*(580/count),
+   y:350,
+   w:22+Math.min(level,25),
+   h:25+Math.random()*20
+  });
+ }
+ player.x=40;player.y=300;
+ player.vx=0;player.vy=0;
+ dead=false;won=false;
+ document.getElementById("info").innerText=
+ "LEVEL: "+level+" / 100";
+}
+
+function jump(){
+ if(grounded&&!dead&&!won){
+  player.vy=-12;
+  grounded=false;
+ }
+}
+
+function restart(){createLevel()}
+
+document.addEventListener("keydown",e=>{
+ keys[e.key.toLowerCase()]=true;
+ if(e.key===" "||e.key==="ArrowUp")jump();
+});
+document.addEventListener("keyup",e=>{
+ keys[e.key.toLowerCase()]=false;
+});
+
+function update(){
+ if(dead||won)return;
+
+ let speed=4+level*0.025;
+ player.vx=0;
+
+ if(keys["arrowleft"]||keys["a"]||left)player.vx=-speed;
+ if(keys["arrowright"]||keys["d"]||right)player.vx=speed;
+
+ player.x+=player.vx;
+ player.vy+=0.55;
+ player.y+=player.vy;
+
+ if(player.y+player.h>=350){
+  player.y=350-player.h;
+  player.vy=0;
+  grounded=true;
+ }else grounded=false;
+
+ player.x=Math.max(0,Math.min(770,player.x));
+
+ for(let t of traps){
+  if(player.x<t.x+t.w&&player.x+player.w>t.x&&
+     player.y<t.y+t.h&&player.y+player.h>t.y){
+   dead=true;
+  }
+ }
+
+ if(player.x+player.w>goal.x&&player.y+player.h>goal.y){
+  won=true;
+ }
+}
+
+function draw(){
+ ctx.clearRect(0,0,800,400);
+
+ // Ground
+ ctx.fillStyle="#555";
+ ctx.fillRect(0,350,800,50);
+
+ // Traps
+ for(let t of traps){
+  ctx.fillStyle="#ff2222";
+  ctx.beginPath();
+  ctx.moveTo(t.x,350);
+  ctx.lineTo(t.x+t.w/2,350-t.h);
+  ctx.lineTo(t.x+t.w,350);
+  ctx.fill();
+ }
+
+ // Goal
+ ctx.fillStyle="#20ee88";
+ ctx.fillRect(goal.x,goal.y,goal.w,goal.h);
+ ctx.fillStyle="white";
+ ctx.fillText("FINISH",goal.x-12,goal.y-10);
+
+ // Devil
+ ctx.fillStyle="#ff3030";
+ ctx.fillRect(player.x,player.y,player.w,player.h);
+ ctx.fillStyle="white";
+ ctx.fillRect(player.x+6,player.y+10,6,6);
+ ctx.fillRect(player.x+19,player.y+10,6,6);
+ ctx.fillStyle="black";
+ ctx.fillRect(player.x+10,player.y+25,12,5);
+
+ if(dead||won){
+  ctx.fillStyle="rgba(0,0,0,.8)";
+  ctx.fillRect(0,0,800,400);
+  ctx.fillStyle=dead?"red":"#20ff88";
+  ctx.font="bold 40px Arial";
+  ctx.textAlign="center";
+  ctx.fillText(dead?"YOU DIED!":"LEVEL COMPLETED!",400,180);
+  ctx.font="22px Arial";
+  ctx.fillStyle="white";
+  ctx.fillText(dead?"Qayta boshlash tugmasini bosing":
+   level===100?"SIZ 100 LEVELNI YUTDINGIZ!":"Keyingi level uchun bosing",400,230);
+  ctx.textAlign="left";
+ }
+}
+
+function loop(){
+ update();
+ draw();
+ requestAnimationFrame(loop);
+}
+
+document.querySelectorAll(".controls button").forEach((b,i)=>{
+ if(i===0){
+  b.addEventListener("pointerdown",()=>left=true);
+  b.addEventListener("pointerup",()=>left=false);
+  b.addEventListener("pointerleave",()=>left=false);
+  b.addEventListener("pointercancel",()=>left=false);
+ }
+ if(i===2){
+  b.addEventListener("pointerdown",()=>right=true);
+  b.addEventListener("pointerup",()=>right=false);
+  b.addEventListener("pointerleave",()=>right=false);
+  b.addEventListener("pointercancel",()=>right=false);
+ }
+});
+
+canvas.addEventListener("click",()=>{
+ if(won){
+  if(level<100){level++;createLevel()}
+ }
+});
+
+createLevel();
+loop();
+</script>
+</body>
+</html>
